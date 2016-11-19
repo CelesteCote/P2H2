@@ -1,1 +1,126 @@
-hello world
+hello world<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+    
+    svg {
+        border:1px solid #f0f;
+    }
+
+    .county {
+        fill: #f0f;
+        stroke: #fff;
+    }
+
+    .county-bubble {
+        fill-opacity: 0.05;
+        stroke: red ;
+        stroke-width: 1;
+    }
+    
+</style>
+
+
+
+<body>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script src="https://d3js.org/topojson.v1.min.js"></script>
+
+<script>
+
+var margin = {top: 0, right: 0, bottom: 0, left: 0};
+
+//JS to go here
+var width = 1050 - margin.left - margin.right,
+    height = 550 - margin.top - margin.bottom;
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+queue()
+        .defer(d3.csv, "ServiceCalls.csv")
+        .defer(d3.json, "wards-2014-shp.json")
+        .await(ready);
+
+var path = d3.geo.path();
+
+function ready(err, data, ott) {
+
+    if (err) throw "error loading data";
+
+
+    callsByWard = {};
+    //coerce data
+    data.forEach(function(d) {
+        callsByWard[d.PostalFSA] = +d.count3;
+    });
+
+    var ottWards = topojson.feature(ott, ott.objects["wards-2014"]). features;
+
+    ottTopo.forEach(function(d) {
+        d.callsCount = callsByWard[d.Grand_Total];
+
+    });
+
+    var ward = svg.selectAll(".wards")
+            .data(ottTopo)
+            .enter()
+            .append("path")
+            .attr("class", "ward")
+            .attr("d", path)
+            .style("fill", function(d) {
+                return "#ccc";
+                // This is from an old example. Ignore for now
+                // var guns = gunsByFips[d.id];
+                // if (guns) return "red";
+                // return "#f0f0f0";
+
+
+            });
+
+    var county = svg.selectAll(".ward-bubble")
+            .data(ottTopo)
+            .enter()
+            .append("circle")
+            .attr("class", "county-bubble")
+            .attr("r", function(d) {
+                var callsForThisWard = callsByWard[d.Grand_Total];
+                if (callsForThisWard) {
+                    return Math.sqrt(callsForThisWard);
+                }
+            })
+            .style("fill", "#000")    
+                .attr("transform", function(d) { 
+
+                    // isNaN(path.centroid(d)) 
+                    var callsForThisWard = callsByWard[d.Grand_Total];
+
+                        if (callsForThisWard) {
+                            return "translate(" + path.centroid(d) + ")";  
+                        }
+                });
+
+                    // var c = path.centroid(d);
+
+                    // if (isNaN(c)) {console.log(d);}
+
+                    // // console.log("path centroid", , d);
+                    // return "translate(" + path.centroid(d) + ")"; });
+
+                // return "(XXX,XXX)";
+
+
+
+
+}
+
+
+
+
+
+</script>
